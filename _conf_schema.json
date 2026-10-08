@@ -1,0 +1,51 @@
+{
+  "api_url": {
+    "type": "string",
+    "description": "肥鱼工坊服务地址",
+    "hint": "填写服务根地址，如 http://127.0.0.1:8787；不要附加 /api/v1。容器中填写实际可访问的地址。",
+    "default": "http://127.0.0.1:8787"
+  },
+  "api_key": {
+    "type": "string",
+    "description": "接口密钥",
+    "hint": "填写肥鱼工坊服务的 API_KEY。",
+    "secret": true,
+    "default": ""
+  },
+  "request_timeout": {
+    "type": "int",
+    "description": "接口超时（秒）",
+    "default": 20
+  },
+  "default_sticker_id": {
+    "type": "string",
+    "description": "默认底图 ID",
+    "hint": "命令未填写 --id 时使用，可通过 /肥鱼素材 查询。",
+    "default": "studio-design-cheer"
+  },
+  "default_font": {
+    "type": "string",
+    "description": "默认字体",
+    "options": ["maoken", "zcool-kuaile", "zcool-qingke-huangyou", "ma-shan-zheng"],
+    "default": "maoken"
+  },
+  "default_color": {
+    "type": "string",
+    "description": "默认文字颜色",
+    "hint": "使用 #RRGGBB 格式。",
+    "default": "#3565ae"
+  },
+  "default_background": {
+    "type": "string",
+    "description": "默认画布背景",
+    "options": ["transparent", "white"],
+    "default": "transparent"
+  },
+  "default_layout": {
+    "type": "string",
+    "description": "默认布局",
+    "hint": "caption 为留白配字，overlay 为叠加文字。",
+    "options": ["caption", "overlay"],
+    "default": "caption"
+  }
+}
