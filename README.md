@@ -110,7 +110,7 @@ python scripts/smoke_webchat.py \
 
 ## 相关项目
 
-- [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio)：网页编辑器、图片渲染服务、素材与字体。
+- [大肥鱼表情工坊 · Blue Fish Studio](https://github.com/Eynnzerr/blue-fish-studio)：提供底图、字体和可视化排版的网页表情包编辑器，同时提供本插件调用的 HTTP 图片渲染服务。
 - [AstrBot](https://github.com/AstrBotDevs/AstrBot)：插件运行框架与消息平台适配。
 
 素材与字体的来源和授权范围见肥鱼工坊的 [第三方来源与许可](https://github.com/Eynnzerr/blue-fish-studio/blob/main/THIRD_PARTY_NOTICES.md)。
