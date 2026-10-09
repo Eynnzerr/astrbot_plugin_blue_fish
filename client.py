@@ -33,6 +33,15 @@ class BlueFishClient:
             raise BlueFishError("图片服务返回的内容不是 PNG 图片，请联系管理员。")
         return content
 
+    async def preview(self, sticker_ids: list[str]) -> bytes:
+        """Return a numbered thumbnail sheet for one ordered catalog page."""
+        content_type, content = await self._request(
+            "POST", "stickers/preview", {"stickerIds": sticker_ids}
+        )
+        if content_type != "image/png" or not content.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise BlueFishError("图片服务返回的素材预览不是 PNG 图片，请联系管理员。")
+        return content
+
     async def stickers(self) -> list[dict]:
         """Return the public sticker catalog from the configured service."""
         return await self._catalog("stickers")

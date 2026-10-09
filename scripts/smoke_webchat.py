@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import re
 import struct
 import time
 from pathlib import Path
@@ -10,42 +11,90 @@ from pathlib import Path
 import aiohttp
 
 
-def scenarios() -> list[tuple[str, str, tuple[str, ...], int]]:
-    """Return command, response text, and PNG expectations for each scenario."""
+def scenarios() -> list[
+    tuple[str, str, tuple[str, ...], tuple[int, int | None] | None]
+]:
+    """Return ordered commands with expected text and optional PNG dimensions.
+
+    A missing dimension tuple means no image is expected. A ``None`` height
+    denotes a catalog preview whose height depends on the number of results.
+    """
     return [
-        ("help", "/肥鱼帮助", ("肥鱼工坊", "--background", "--layout"), 0),
-        ("empty-command", "/肥鱼", ("肥鱼工坊", "/肥鱼素材"), 0),
-        ("search", "/肥鱼素材 开心", ("肥鱼素材", "底图ID"), 0),
-        ("page-two", "/肥鱼素材 --page 2", ("第 2/", "底图ID"), 0),
-        ("fonts", "/肥鱼字体", ("maoken", "zcool-kuaile", "ma-shan-zheng"), 0),
-        ("default", "/肥鱼 好耶！", (), 1),
+        ("help", "/肥鱼帮助", ("肥鱼工坊", "--background", "--layout"), None),
+        ("empty-command", "/肥鱼", ("肥鱼工坊", "/肥鱼素材"), None),
+        (
+            "number-without-catalog",
+            "/肥鱼 1 今天也要开心呀",
+            ("请先发送 /肥鱼素材",),
+            None,
+        ),
+        ("quoted-numeric-caption", '/肥鱼 "3"', (), (1024, 1024)),
+        (
+            "numeric-after-separator",
+            "/肥鱼 -- 3 今天也要开心呀",
+            (),
+            (1024, 1024),
+        ),
+        (
+            "search",
+            "/肥鱼素材 开心",
+            ("肥鱼素材", "第 1/", "使用：/肥鱼 1 ", "30 分钟"),
+            (960, None),
+        ),
+        ("select-search-one", "/肥鱼 1 今天也要开心呀", (), (1024, 1024)),
+        (
+            "number-without-caption",
+            "/肥鱼 1",
+            ("请在素材编号后填写文案",),
+            None,
+        ),
+        (
+            "number-out-of-range",
+            "/肥鱼 99 今天也要开心呀",
+            ("素材编号超出范围",),
+            None,
+        ),
+        (
+            "page-two",
+            "/肥鱼素材 --page 2",
+            ("第 2/", "使用：/肥鱼 1 "),
+            (960, None),
+        ),
+        (
+            "select-page-two-three",
+            "/肥鱼 3 轮到第三条鱼出场啦 --background white --layout overlay",
+            (),
+            (1024, 1024),
+        ),
+        ("fonts", "/肥鱼字体", ("maoken", "zcool-kuaile", "ma-shan-zheng"), None),
+        ("default", "/肥鱼 好耶！", (), (1024, 1024)),
         (
             "full-style",
             '/肥鱼 "今天也要开心呀" --id studio-design-cheer '
             "--font zcool-kuaile --color #e2547b --background white --layout overlay",
             (),
-            1,
+            (1024, 1024),
         ),
         (
             "alias-multiline",
             '/bluefish "第一行\\n第二行" --id studio-design-cheer --font ma-shan-zheng',
             (),
-            1,
+            (1024, 1024),
         ),
-        ("option-separator", "/肥鱼 -- --今天开心", (), 1),
+        ("option-separator", "/肥鱼 -- --今天开心", (), (1024, 1024)),
         (
             "unknown-material",
             "/肥鱼 开心 --id smoke-missing",
             ("未找到指定素材",),
-            0,
+            None,
         ),
-        ("invalid-color", "/肥鱼 开心 --color pink", ("#RRGGBB",), 0),
-        ("unknown-option", "/肥鱼 开心 --rotate 10", ("不支持参数 --rotate",), 0),
-        ("missing-option-value", "/肥鱼 开心 --font", ("需要填写一个值",), 0),
-        ("unclosed-quote", '/肥鱼 "开心', ("引号未闭合",), 0),
-        ("empty-caption", '/肥鱼 ""', ("请填写文案",), 0),
-        ("invalid-page", "/肥鱼素材 --page 0", ("必须是正整数",), 0),
-        ("long-caption", "/肥鱼 " + "鱼" * 201, ("200",), 0),
+        ("invalid-color", "/肥鱼 开心 --color pink", ("#RRGGBB",), None),
+        ("unknown-option", "/肥鱼 开心 --rotate 10", ("不支持参数 --rotate",), None),
+        ("missing-option-value", "/肥鱼 开心 --font", ("需要填写一个值",), None),
+        ("unclosed-quote", '/肥鱼 "开心', ("引号未闭合",), None),
+        ("empty-caption", '/肥鱼 ""', ("请填写文案",), None),
+        ("invalid-page", "/肥鱼素材 --page 0", ("必须是正整数",), None),
+        ("long-caption", "/肥鱼 " + "鱼" * 201, ("200",), None),
     ]
 
 
@@ -93,13 +142,19 @@ async def send_command(
 async def check_scenario(
     client: aiohttp.ClientSession,
     session_id: str,
-    case: tuple[str, str, tuple[str, ...], int],
+    case: tuple[str, str, tuple[str, ...], tuple[int, int | None] | None],
     output: Path,
 ) -> dict:
     """Verify bot output and download real image attachments to the evidence folder."""
-    name, command, expected_text, expected_images = case
+    name, command, expected_text, expected_dimensions = case
+    expected_images = int(expected_dimensions is not None)
     started = time.monotonic()
-    result = {"name": name, "command": command, "passed": False}
+    result = {
+        "name": name,
+        "command": command,
+        "session_id": session_id,
+        "passed": False,
+    }
     try:
         events = await send_command(client, session_id, command)
         result["events"] = [event.get("type") for event in events]
@@ -126,8 +181,16 @@ async def check_scenario(
             len(attachments) == expected_images,
             f"Expected {expected_images} saved image attachments",
         )
-        if expected_images:
+        if expected_images and not expected_text:
             require(not text.strip(), "Image command unexpectedly replied with text")
+        if expected_dimensions and expected_dimensions[1] is None:
+            entries = re.findall(r"^([0-9]+)\.\s+(\S[^\n]*)", text, re.MULTILINE)
+            require(1 <= len(entries) <= 8, "Catalog must contain 1–8 numbered names")
+            require(
+                [int(number) for number, _ in entries] == list(range(1, len(entries) + 1)),
+                "Catalog numbers must start at 1 and follow display order",
+            )
+            result["catalog_entries"] = [name for _, name in entries]
         result["images"] = []
         for index, attachment_id in enumerate(attachments, start=1):
             async with client.get(
@@ -145,14 +208,25 @@ async def check_scenario(
             )
             require(png[12:16] == b"IHDR", "PNG has no leading IHDR")
             dimensions = struct.unpack(">II", png[16:24])
+            expected_width, expected_height = expected_dimensions
+            if expected_height is None:
+                # The preview uses two columns with fixed card rows and page margins.
+                rows = (len(result["catalog_entries"]) + 1) // 2
+                expected_height = 200 + rows * 484
+            require(dimensions[0] == expected_width, f"Unexpected PNG width: {dimensions}")
             require(
-                dimensions == (1024, 1024),
-                f"Unexpected PNG dimensions: {dimensions}",
+                dimensions[1] == expected_height,
+                f"Unexpected PNG height: {dimensions}, expected {expected_height}",
             )
             filename = f"{name}-{index}.png"
             (output / filename).write_bytes(png)
             result["images"].append(
-                {"file": filename, "bytes": len(png), "width": 1024, "height": 1024}
+                {
+                    "file": filename,
+                    "bytes": len(png),
+                    "width": dimensions[0],
+                    "height": dimensions[1],
+                }
             )
         result["passed"] = True
     except (AssertionError, aiohttp.ClientError, asyncio.TimeoutError, ValueError) as error:
@@ -167,7 +241,7 @@ async def check_scenario(
 
 
 async def run(args: argparse.Namespace) -> bool:
-    """Authenticate once, create a dedicated WebChat, and write a credential-free report."""
+    """Verify commands and catalog session isolation, then write a public-safe report."""
     credentials = json.loads(args.credentials.read_text(encoding="utf-8-sig"))
     args.output.mkdir(parents=True, exist_ok=True)
     async with aiohttp.ClientSession(
@@ -189,10 +263,27 @@ async def run(args: argparse.Namespace) -> bool:
         results = []
         for case in scenarios():
             results.append(await check_scenario(client, session_id, case, args.output))
+        # A fresh chat must not inherit this user's successful catalog selection.
+        other_session = await json_request(client, "GET", "/api/chat/new_session")
+        isolated_session_id = other_session["session_id"]
+        results.append(
+            await check_scenario(
+                client,
+                isolated_session_id,
+                (
+                    "other-chat-has-no-catalog",
+                    "/肥鱼 1 不能沿用另一个聊天的目录",
+                    ("请先发送 /肥鱼素材",),
+                    None,
+                ),
+                args.output,
+            )
+        )
     passed = sum(result["passed"] for result in results)
     report = {
         "base_url": args.base_url,
         "session_id": session_id,
+        "isolated_session_id": isolated_session_id,
         "passed": passed,
         "total": len(results),
         "results": results,

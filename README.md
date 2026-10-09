@@ -1,15 +1,27 @@
 # 肥鱼工坊 · AstrBot 插件
 
-在聊天中输入文案和样式参数，机器人调用 [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio) 图片服务，回复一张 1024 × 1024 PNG 表情包。支持查询底图、选择字体、修改文字颜色，以及透明或白色画布、留白或叠加排版。
+先看缩略图目录，再用编号和文案制作表情包。机器人调用 [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio) 图片服务，回复一张 1024 × 1024 PNG 图片；支持选择字体、文字颜色、画布背景和排版。
 
 ```text
-/肥鱼 今天也要开心呀
-/肥鱼 "肥鱼上线\n快乐加倍" --id studio-design-cheer --font zcool-kuaile
+/肥鱼素材 开心
+/肥鱼 3 今天也要开心呀
 ```
+
+## 第一次使用
+
+1. 发送 `/肥鱼素材`，机器人回复一页带编号的缩略图；也可以发送 `/肥鱼素材 开心` 按关键词查找。
+2. 看中第 3 张，发送 `/肥鱼 3 今天也要开心呀`，即可收到配好文案的 PNG。
+3. 想换风格，可以发送 `/肥鱼 3 今天也要开心呀 --font zcool-kuaile --color #e86ca4`。
+
+每页最多 8 张，翻页时按机器人给出的下一页命令操作。编号对应你在当前聊天中最近收到的一页，30 分钟内有效；群友的查询各自独立。插件重载后重新查询即可。
+
+不选图时，`/肥鱼 今天也要开心呀` 使用默认底图。想让文案本身以数字开头，可加引号：`/肥鱼 "3 只鱼一起摸鱼"`。
 
 ## 安装与配置
 
 运行环境：Python 3.10+、AstrBot 4.28.2+，以及可访问的肥鱼工坊图片服务。
+
+插件 0.2.0 的缩略图目录需要图片服务提供 `POST /api/v1/stickers/preview`。从旧版升级时，请同时更新图片服务代码并重启；Docker 部署重新执行下方的 Compose 构建命令。
 
 在 AstrBot WebUI 的插件管理中，使用以下仓库地址安装：
 
@@ -26,7 +38,7 @@ https://github.com/Eynnzerr/astrbot_plugin_blue_fish
 | `api_url` | `http://127.0.0.1:8787` | 图片服务根地址，不包含 `/api/v1` |
 | `api_key` | 空，需填写 | 与服务端 `API_KEY` 相同；配置页面遮罩显示 |
 | `request_timeout` | `20` | HTTP 请求超时，单位为秒 |
-| `default_sticker_id` | `studio-design-cheer` | 未指定 `--id` 时使用的底图 |
+| `default_sticker_id` | `studio-design-cheer` | 未指定编号或 `--id` 时使用的底图 |
 | `default_font` | `maoken` | 默认字体 ID |
 | `default_color` | `#3565ae` | 默认文字颜色 |
 | `default_background` | `transparent` | 默认画布背景 |
@@ -57,8 +69,8 @@ docker compose --env-file .env.api up -d --build
 
 | 命令 | 用途 | 英文别名 |
 | --- | --- | --- |
-| `/肥鱼 <文案> [选项]` | 生成并回复 PNG 图片 | `/bluefish` |
-| `/肥鱼素材 [关键词] [--page 页码]` | 查找底图 ID，每页 8 条 | `/bluefish_stickers` |
+| `/肥鱼 [编号] <文案> [选项]` | 用目录中的图片或默认底图生成 PNG | `/bluefish` |
+| `/肥鱼素材 [关键词] [--page 页码]` | 查看带编号的缩略图目录，每页最多 8 张 | `/bluefish_stickers` |
 | `/肥鱼字体` | 查询可用字体 ID 与名称 | `/bluefish_fonts` |
 | `/肥鱼帮助` | 查看命令说明 | `/bluefish_help` |
 
@@ -66,19 +78,20 @@ docker compose --env-file .env.api up -d --build
 
 | 选项 | 取值 |
 | --- | --- |
-| `--id` | `/肥鱼素材` 返回的底图 ID |
+| `--id` | 完整底图 ID，如 `studio-design-cheer`；优先于编号解析 |
 | `--font` | `/肥鱼字体` 返回的字体 ID |
 | `--color` | `#RRGGBB`，如 `#e86ca4` |
 | `--background` | `transparent` 透明画布，或 `white` 白色画布 |
 | `--layout` | `caption` 留白配字，或 `overlay` 叠加文字 |
 
-未填写的选项使用插件配置中的默认值。文案最多 200 个字符；包含空格时可以加引号，双引号内的字面 `\n` 表示换行。长文案可手动分行，服务不自动缩小字号。
+未填写的选项使用插件配置中的默认值。选图编号放在文案前、命令参数的开头。文案最多 200 个字符；包含空格时可以加引号，双引号内的字面 `\n` 表示换行。长文案可手动分行，服务不自动缩小字号。
 
 ```text
 /肥鱼素材 开心
 /肥鱼素材 --page 2
+/肥鱼 1 "今天也要\n开心呀" --color #e86ca4 --background white
 /肥鱼字体
-/肥鱼 "今天也要 开心呀" --color #e86ca4 --background white
+/肥鱼 "肥鱼上线\n快乐加倍" --id studio-design-cheer --font zcool-kuaile
 /肥鱼 "第一行\n第二行" --font ma-shan-zheng --layout overlay
 ```
 
@@ -86,6 +99,7 @@ docker compose --env-file .env.api up -d --build
 
 ```text
 /肥鱼 --color #e86ca4 -- --今天也要开心！
+/肥鱼 -- 3 只鱼一起摸鱼
 ```
 
 底图、字体、颜色和排版参数由图片服务校验，输入无效时机器人回复中文错误提示。服务鉴权失败、忙碌或请求超时，也会通过文字说明。
@@ -94,7 +108,7 @@ docker compose --env-file .env.api up -d --build
 
 ## 本地联调
 
-已在 AstrBot 4.28.2 的真实 WebChat 中通过 17 个场景，覆盖帮助、素材搜索与分页、字体列表、样式参数、英文别名、多行文案和错误输入。4 张机器人回复的 PNG 均为 1024 × 1024，与相同参数直接调用图片服务的结果逐字节一致；OneBot 适配器的图片消息序列化也已验证。
+已在 AstrBot 4.28.2 的真实 WebChat 中通过 25 个场景，覆盖缩略图搜索与分页、按编号制图、跨聊天隔离、数字文案、字体与样式参数、英文别名和错误输入。成品为 1024 × 1024 PNG；搜索和翻页后的编号均对应实际选中的底图。
 
 QQ 群聊实测已成功收到插件生成的 PNG。联调中遇到的 Docker Desktop 代理问题，通过为 QQ 上传地址配置代理绕过规则后恢复。
 

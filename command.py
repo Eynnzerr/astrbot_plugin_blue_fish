@@ -1,5 +1,6 @@
 """Parse the small command-line interface exposed to chat users."""
 
+import re
 import shlex
 
 
@@ -40,8 +41,16 @@ def _split_arguments(
     return words, options
 
 
-def parse_render_arguments(arguments: str, defaults: dict) -> dict:
-    """Build a render payload from chat text and caller-provided API defaults."""
+def parse_render_arguments(
+    arguments: str, defaults: dict, selection: list[str] | None = None
+) -> dict:
+    """Build an API payload, resolving an optional leading catalog number.
+
+    ``selection`` contains sticker IDs in the latest catalog's display order.
+    An unquoted leading one- or two-digit number selects an entry unless
+    ``--id`` is supplied. Quoted captions and text after ``--`` remain literal.
+    Invalid numbers, missing catalogs, and empty captions raise ``ValueError``.
+    """
     supported = {
         "--id": "stickerId",
         "--font": "font",
@@ -50,6 +59,20 @@ def parse_render_arguments(arguments: str, defaults: dict) -> dict:
         "--layout": "layout",
     }
     words, options = _split_arguments(arguments, supported)
+    # Inspect the raw prefix because shlex removes quoting around literal numbers.
+    number = re.match(r"[ \t\r\n]*([0-9]{1,2})(?=[ \t\r\n]|$)", arguments)
+    if number and "stickerId" not in options:
+        index = int(number.group(1))
+        if index == 0:
+            raise ValueError("素材编号从 1 开始，请发送 /肥鱼素材 查看可选底图。")
+        if not selection:
+            raise ValueError("请先发送 /肥鱼素材 查看底图，再用编号和文案制作表情包。")
+        if index > len(selection):
+            raise ValueError(f"素材编号超出范围，请选择当前目录中的 1–{len(selection)}。")
+        options["stickerId"] = selection[index - 1]
+        words = words[1:]
+        if not " ".join(words).strip():
+            raise ValueError(f"请在素材编号后填写文案，例如：/肥鱼 {index} 今天也要开心！")
     # Shell quoting preserves a literal backslash-n inside quoted captions.
     text = " ".join(words).replace(r"\n", "\n")
     if not text.strip():
