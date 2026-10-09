@@ -1,7 +1,7 @@
 name: astrbot_plugin_blue_fish
 display_name: 肥鱼工坊
 desc: 通过肥鱼工坊 API 查询底图和字体，按文案与样式生成 PNG 表情包。
-version: 0.1.0
+version: 0.1.1
 author: Eynnzerr
 repo: ""
 astrbot_version: ">=4.28.2"

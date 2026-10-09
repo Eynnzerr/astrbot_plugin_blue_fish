@@ -1,6 +1,6 @@
 """AstrBot commands for the Blue Fish Studio image rendering service."""
 
-from astrbot.api import AstrBotConfig
+from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Image
 from astrbot.api.star import Context, Star
@@ -67,8 +67,17 @@ class BlueFishPlugin(Star):
         except (ValueError, BlueFishError) as error:
             yield event.plain_result(f"制图失败：{error}\n用法见 /肥鱼帮助。")
             return
-        # Inline PNG bytes work across separate AstrBot and OneBot containers.
-        yield event.chain_result([Image.fromBytes(png)])
+        # Await delivery here so platform errors can be reported to the requester.
+        # Yielding the image delegates delivery to a later framework stage.
+        try:
+            await event.send(event.chain_result([Image.fromBytes(png)]))
+        except Exception as error:
+            logger.warning(f"Blue Fish image delivery failed: {type(error).__name__}")
+            if "rich media transfer failed" in str(error):
+                message = "图片已生成，但 QQ 上传失败。请稍后重试或联系管理员检查 NapCat。"
+            else:
+                message = "图片已生成，但发送失败。请稍后重试或联系管理员检查消息平台连接。"
+            yield event.plain_result(message)
 
     @filter.command("肥鱼素材", alias={"bluefish_stickers"})
     async def stickers(self, event: AstrMessageEvent):
