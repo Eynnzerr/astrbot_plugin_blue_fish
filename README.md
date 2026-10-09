@@ -11,7 +11,13 @@
 
 运行环境：Python 3.10+、AstrBot 4.28.2+，以及可访问的肥鱼工坊图片服务。
 
-首次安装推荐使用 AstrBot WebUI 的本地 ZIP 上传功能。将本目录内容打包，确保 ZIP 根目录包含 `main.py`、`metadata.yaml`、`_conf_schema.json` 和 `requirements.txt`。也可以将完整插件目录复制到 `AstrBot/data/plugins/astrbot_plugin_blue_fish`，在 AstrBot 使用的 Python 环境中安装 `requirements.txt`，然后重启或重载插件。
+在 AstrBot WebUI 的插件管理中，使用以下仓库地址安装：
+
+```text
+https://github.com/Eynnzerr/astrbot_plugin_blue_fish
+```
+
+也可使用本地 ZIP 上传功能。将本目录内容打包，确保 ZIP 根目录包含 `main.py`、`metadata.yaml`、`_conf_schema.json` 和 `requirements.txt`；或将完整插件目录复制到 `AstrBot/data/plugins/astrbot_plugin_blue_fish`，在 AstrBot 使用的 Python 环境中安装 `requirements.txt`，然后重启或重载插件。
 
 在插件配置页面填写服务地址与 API Key：
 
@@ -84,11 +90,13 @@ docker compose --env-file .env.api up -d --build
 
 底图、字体、颜色和排版参数由图片服务校验，输入无效时机器人回复中文错误提示。服务鉴权失败、忙碌或请求超时，也会通过文字说明。
 
-如果图片已经生成，但 QQ 的图片上传失败，插件会回复“图片已生成，但 QQ 上传失败”。管理员可检查 NapCat 日志中的 `rich media transfer failed`；这一步发生在 QQ 媒体发送阶段。
+如果图片已经生成，但 QQ 的图片上传失败，插件会回复“图片已生成，但 QQ 上传失败”。管理员可检查 NapCat 日志中的 `rich media transfer failed`；这一步发生在 QQ 媒体发送阶段。Docker Desktop 部署下的代理故障与处理方法见 [QQ 图片上传排障](docs/troubleshooting.md)。
 
 ## 本地联调
 
 已在 AstrBot 4.28.2 的真实 WebChat 中通过 17 个场景，覆盖帮助、素材搜索与分页、字体列表、样式参数、英文别名、多行文案和错误输入。4 张机器人回复的 PNG 均为 1024 × 1024，与相同参数直接调用图片服务的结果逐字节一致；OneBot 适配器的图片消息序列化也已验证。
+
+QQ 群聊实测已成功收到插件生成的 PNG。联调中遇到的 Docker Desktop 代理问题，通过为 QQ 上传地址配置代理绕过规则后恢复。
 
 复用仓库中的联调脚本时，先安装并配置插件，然后使用 AstrBot 的 Python 环境运行：
 
