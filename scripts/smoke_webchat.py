@@ -262,8 +262,12 @@ async def run(args: argparse.Namespace) -> bool:
         print(f"WebChat session: {session_id}", flush=True)
         results = []
         for case in scenarios():
+            if results and args.interval:
+                await asyncio.sleep(args.interval)
             results.append(await check_scenario(client, session_id, case, args.output))
         # A fresh chat must not inherit this user's successful catalog selection.
+        if args.interval:
+            await asyncio.sleep(args.interval)
         other_session = await json_request(client, "GET", "/api/chat/new_session")
         isolated_session_id = other_session["session_id"]
         results.append(
@@ -282,6 +286,7 @@ async def run(args: argparse.Namespace) -> bool:
     passed = sum(result["passed"] for result in results)
     report = {
         "base_url": args.base_url,
+        "interval_seconds": args.interval,
         "session_id": session_id,
         "isolated_session_id": isolated_session_id,
         "passed": passed,
@@ -306,7 +311,15 @@ def main() -> None:
         help="Private JSON file containing username and password",
     )
     parser.add_argument("--output", default=Path(".preview/webchat"), type=Path)
+    parser.add_argument(
+        "--interval",
+        default=0,
+        type=float,
+        help="Seconds to wait between scenarios when testing a rate-limited service",
+    )
     args = parser.parse_args()
+    if args.interval < 0:
+        parser.error("--interval must be non-negative")
     try:
         passed = asyncio.run(run(args))
     except (

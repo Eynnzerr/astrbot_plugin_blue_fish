@@ -2,13 +2,13 @@
   "api_url": {
     "type": "string",
     "description": "肥鱼工坊服务地址",
-    "hint": "填写服务根地址，如 http://127.0.0.1:8787；不要附加 /api/v1。容器中填写实际可访问的地址。",
-    "default": "http://127.0.0.1:8787"
+    "hint": "默认公共图片服务无需 API Key。自建服务可填写 http://127.0.0.1:8787 等可访问地址；不要附加 /api/v1。",
+    "default": "https://eynnzerr.cloud/blue-fish"
   },
   "api_key": {
     "type": "string",
     "description": "接口密钥",
-    "hint": "填写肥鱼工坊服务的 API_KEY。",
+    "hint": "默认公共服务留空；使用自建服务或已获得单独调用凭证时填写。",
     "secret": true,
     "default": ""
   },
@@ -20,7 +20,7 @@
   "default_sticker_id": {
     "type": "string",
     "description": "默认底图 ID",
-    "hint": "命令未填写 --id 时使用，可通过 /肥鱼素材 查询。",
+    "hint": "未指定目录编号或 --id 时使用。填写服务素材列表中的完整 ID，如 studio-design-cheer。",
     "default": "studio-design-cheer"
   },
   "default_font": {

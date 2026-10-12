@@ -19,9 +19,9 @@
 
 ## 安装与配置
 
-运行环境：Python 3.10+、AstrBot 4.28.2+，以及可访问的肥鱼工坊图片服务。
+运行环境：Python 3.10+、AstrBot 4.28.2+。
 
-插件 0.2.0 的缩略图目录需要图片服务提供 `POST /api/v1/stickers/preview`。从旧版升级时，请同时更新图片服务代码并重启；Docker 部署重新执行下方的 Compose 构建命令。
+默认图片服务为 `https://eynnzerr.cloud/blue-fish`，已上线，供安装本插件的 QQ Bot 使用。使用默认服务时无需 API Key，安装后即可使用。
 
 在 AstrBot WebUI 的插件管理中，使用以下仓库地址安装：
 
@@ -31,18 +31,28 @@ https://github.com/Eynnzerr/astrbot_plugin_blue_fish
 
 也可使用本地 ZIP 上传功能。将本目录内容打包，确保 ZIP 根目录包含 `main.py`、`metadata.yaml`、`_conf_schema.json` 和 `requirements.txt`；或将完整插件目录复制到 `AstrBot/data/plugins/astrbot_plugin_blue_fish`，在 AstrBot 使用的 Python 环境中安装 `requirements.txt`，然后重启或重载插件。
 
-在插件配置页面填写服务地址与 API Key：
+默认配置中 `api_key` 留空。服务按机器人所在服务器的出口 IP 限流，同一出口 IP 的机器人和聊天共享额度；遇到请求频繁或服务繁忙的提示时，稍候重试。
+
+图片服务接收文案和样式参数，在内存中即时合成并返回 PNG，不保存文案或生成图片。
+
+升级保留已有的 `api_url` 和 `api_key` 配置。切换到默认图片服务时，将地址改为上述 URL，未获得单独调用凭证时将 API Key 留空。可选 API Key 用于自建服务或已获单独凭证的机器人实例。
+
+插件配置：
 
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
-| `api_url` | `http://127.0.0.1:8787` | 图片服务根地址，不包含 `/api/v1` |
-| `api_key` | 空，需填写 | 与服务端 `API_KEY` 相同；配置页面遮罩显示 |
+| `api_url` | `https://eynnzerr.cloud/blue-fish` | 默认公共图片服务地址；可改为自建服务根地址，不包含 `/api/v1` |
+| `api_key` | 空 | 默认公共服务留空；自建服务或已获单独凭证的实例按需填写，配置页面遮罩显示 |
 | `request_timeout` | `20` | HTTP 请求超时，单位为秒 |
 | `default_sticker_id` | `studio-design-cheer` | 未指定编号或 `--id` 时使用的底图 |
 | `default_font` | `maoken` | 默认字体 ID |
 | `default_color` | `#3565ae` | 默认文字颜色 |
 | `default_background` | `transparent` | 默认画布背景 |
 | `default_layout` | `caption` | 默认排版方式 |
+
+### 使用自建服务
+
+部署 [肥鱼工坊图片服务](https://github.com/Eynnzerr/blue-fish-studio)，然后在插件配置中填写实际可访问的 `api_url` 和对应的 `api_key`。缩略图目录需要服务提供 `POST /api/v1/stickers/preview`；旧版服务需更新代码并重启，Docker 部署重新执行下方的 Compose 构建命令。
 
 启动本机图片服务时，在 `blue-fish-studio` 仓库目录执行：
 
@@ -121,6 +131,8 @@ python scripts/smoke_webchat.py \
 ```
 
 凭据文件包含 `username` 和 `password` 两个字段，使用本地 WebUI 的登录账号。脚本会新建 WebChat 会话、发送测试命令，并将回复图片和报告写入已忽略的 `.preview/webchat/`；终端输出会话 ID，便于在 WebUI 查看结果。测试使用默认样式配置和 `studio-design-cheer` 素材。
+
+测试有限流的服务时可添加 `--interval 4`，在各场景之间等待 4 秒；默认不等待。
 
 ## 相关项目
 

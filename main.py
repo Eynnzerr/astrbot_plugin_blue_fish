@@ -66,7 +66,7 @@ class BlueFishPlugin(Star):
         """Read the framework-managed connection and default style settings."""
         super().__init__(context)
         self.client = BlueFishClient(
-            config.get("api_url", "http://127.0.0.1:8787"),
+            config.get("api_url", "https://eynnzerr.cloud/blue-fish"),
             config.get("api_key", ""),
             float(config.get("request_timeout", 20)),
         )

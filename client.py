@@ -1,4 +1,4 @@
-"""Authenticated asynchronous access to the Blue Fish rendering service."""
+"""Asynchronous access to public or authenticated Blue Fish rendering services."""
 
 import asyncio
 import json
@@ -16,7 +16,7 @@ class BlueFishClient:
 
     Attributes:
         base_url: Administrator-configured HTTP origin and optional path prefix.
-        api_key: Bearer credential used only in outgoing authorization headers.
+        api_key: Optional Bearer credential for a service that requires authentication.
         timeout: Maximum duration in seconds for one complete HTTP request.
     """
 
@@ -63,9 +63,9 @@ class BlueFishClient:
         return items
 
     def _validated_base_url(self) -> str:
-        """Require a configured HTTP address and a separately supplied API key."""
-        if not self.base_url or not self.api_key:
-            raise BlueFishError("肥鱼服务尚未配置，请管理员填写服务地址和 API Key。")
+        """Require a configured HTTP address without embedded credentials."""
+        if not self.base_url:
+            raise BlueFishError("肥鱼服务尚未配置，请管理员填写服务地址。")
         try:
             parsed = urlsplit(self.base_url)
             valid = (
@@ -86,7 +86,7 @@ class BlueFishClient:
     async def _request(
         self, method: str, endpoint: str, payload: dict | None = None
     ) -> tuple[str, bytes]:
-        """Perform one authenticated call while keeping network details out of chat."""
+        """Call the service with optional authentication and readable network errors."""
         url = f"{self._validated_base_url()}/api/v1/{endpoint}"
         try:
             async with aiohttp.ClientSession(
@@ -97,7 +97,9 @@ class BlueFishClient:
                     method,
                     url,
                     json=payload,
-                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    headers=(
+                        {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
+                    ),
                     allow_redirects=False,
                 ) as response:
                     content = await response.read()
