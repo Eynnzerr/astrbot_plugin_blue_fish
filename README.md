@@ -1,11 +1,46 @@
 # 肥鱼工坊 · AstrBot 插件
 
+<p align="center">
+  <img src="logo.png" alt="肥鱼工坊 Logo" width="160" height="160" />
+</p>
+
 先看缩略图目录，再用编号和文案制作表情包。机器人调用 [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio) 图片服务，回复一张 1024 × 1024 PNG 图片；支持选择字体、文字颜色、画布背景和排版。
 
 ```text
 /肥鱼素材 开心
 /肥鱼 3 今天也要开心呀
 ```
+
+## 使用效果
+
+QQ 群聊中的实际效果，点击图片可查看大图。
+
+<table>
+  <tr>
+    <th>素材查询</th>
+    <th>按编号制图</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/images/qq-sticker-search.jpg"><img src="docs/images/qq-sticker-search.jpg" alt="QQ 群聊中查询思考主题底图，机器人返回带编号的缩略图目录" width="320" /></a>
+    </td>
+    <td align="center">
+      <a href="docs/images/qq-numbered-render.jpg"><img src="docs/images/qq-numbered-render.jpg" alt="使用底图编号和分行文案，生成让我深度思考一下表情包" width="320" /></a>
+    </td>
+  </tr>
+  <tr>
+    <th>自定义字体与配色</th>
+    <th>命令帮助</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/images/qq-custom-style.jpg"><img src="docs/images/qq-custom-style.jpg" alt="使用站酷快乐体和粉色文字，生成思考结束下班表情包" width="320" /></a>
+    </td>
+    <td align="center">
+      <a href="docs/images/qq-command-help.jpg"><img src="docs/images/qq-command-help.jpg" alt="肥鱼帮助命令展示素材查询、编号制图、字体颜色及排版选项" width="320" /></a>
+    </td>
+  </tr>
+</table>
 
 ## 第一次使用
 
@@ -139,4 +174,4 @@ python scripts/smoke_webchat.py \
 - [大肥鱼表情工坊 · Blue Fish Studio](https://github.com/Eynnzerr/blue-fish-studio)：提供底图、字体和可视化排版的网页表情包编辑器，同时提供本插件调用的 HTTP 图片渲染服务。
 - [AstrBot](https://github.com/AstrBotDevs/AstrBot)：插件运行框架与消息平台适配。
 
-素材与字体的来源和授权范围见肥鱼工坊的 [第三方来源与许可](https://github.com/Eynnzerr/blue-fish-studio/blob/main/THIRD_PARTY_NOTICES.md)。
+插件 Logo 复用肥鱼工坊网页标题栏的鲸鱼娘插画。角色署名见 [素材来源](https://github.com/Eynnzerr/blue-fish-studio/blob/main/ASSET_SOURCES.md)，素材与字体的来源和授权范围见 [第三方来源与许可](https://github.com/Eynnzerr/blue-fish-studio/blob/main/THIRD_PARTY_NOTICES.md)。
