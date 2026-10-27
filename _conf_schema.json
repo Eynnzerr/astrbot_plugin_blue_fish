@@ -41,6 +41,42 @@
     "options": ["transparent", "white"],
     "default": "transparent"
   },
+  "llm_enabled": {
+    "type": "bool",
+    "description": "启用模型创作表情包",
+    "hint": "自动创作总开关，同时控制正常回复后的概率配图与 Skill 模型工具。",
+    "default": true
+  },
+  "llm_group_whitelist": {
+    "type": "list",
+    "description": "自主创作群白名单",
+    "hint": "每项填写一个群号；留空允许所有群。控制概率配图与 Skill 模型工具的使用范围。",
+    "default": []
+  },
+  "llm_cooldown_seconds": {
+    "type": "int",
+    "description": "Skill 工具配图冷却（秒）",
+    "hint": "仅控制 Skill 工具路径。按当前群或私聊账号计时，与概率配图共享最近发送尝试时间；失败也进入冷却，0 表示关闭冷却。",
+    "default": 300
+  },
+  "llm_private_whitelist": {
+    "type": "list",
+    "description": "允许自动创作表情的私聊账号",
+    "hint": "每项填写一个账号；这些账号可在私聊中使用概率配图与 Skill 模型工具，留空关闭私聊自动创作。",
+    "default": []
+  },
+  "reply_meme_probability": {
+    "type": "float",
+    "description": "正常回复配图概率（%）",
+    "hint": "对符合白名单、冷却等条件的完整正常回复抽签一次；0 关闭，100 表示每次符合条件都配图。",
+    "default": 10.0
+  },
+  "reply_meme_cooldown_seconds": {
+    "type": "int",
+    "description": "概率配图冷却（秒）",
+    "hint": "仅控制概率配图路径。按当前群或私聊账号计时，与 Skill 工具共享最近发送尝试时间；失败也进入冷却，0 表示关闭冷却。",
+    "default": 0
+  },
   "default_layout": {
     "type": "string",
     "description": "默认布局",

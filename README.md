@@ -4,7 +4,7 @@
   <img src="logo.png" alt="肥鱼工坊 Logo" width="160" height="160" />
 </p>
 
-先看缩略图目录，再用编号和文案制作表情包。机器人调用 [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio) 图片服务，回复一张 1024 × 1024 PNG 图片；支持选择字体、文字颜色、画布背景和排版。
+让机器人在正常回复后按概率补一张原创配文的肥鱼表情，也支持通过 Skill 按需创作，或先看缩略图目录再用命令按编号制图。插件调用 [肥鱼工坊](https://github.com/Eynnzerr/blue-fish-studio) 图片服务，生成 1024 × 1024 PNG；支持选择字体、文字颜色、画布背景和排版。
 
 ```text
 /肥鱼素材 开心
@@ -64,7 +64,7 @@ QQ 群聊中的实际效果，点击图片可查看大图。
 https://github.com/Eynnzerr/astrbot_plugin_blue_fish
 ```
 
-也可使用本地 ZIP 上传功能。将本目录内容打包，确保 ZIP 根目录包含 `main.py`、`metadata.yaml`、`_conf_schema.json` 和 `requirements.txt`；或将完整插件目录复制到 `AstrBot/data/plugins/astrbot_plugin_blue_fish`，在 AstrBot 使用的 Python 环境中安装 `requirements.txt`，然后重启或重载插件。
+也可使用本地 ZIP 上传功能。将本目录内容打包，确保 ZIP 根目录包含 `main.py`、`client.py`、`command.py`、`creation.py`、`metadata.yaml`、`_conf_schema.json`、`requirements.txt` 和 `skills/`；或将完整插件目录复制到 `AstrBot/data/plugins/astrbot_plugin_blue_fish`，在 AstrBot 使用的 Python 环境中安装 `requirements.txt`，然后重启或重载插件。
 
 默认配置中 `api_key` 留空。服务按机器人所在服务器的出口 IP 限流，同一出口 IP 的机器人和聊天共享额度；遇到请求频繁或服务繁忙的提示时，稍候重试。
 
@@ -84,6 +84,47 @@ https://github.com/Eynnzerr/astrbot_plugin_blue_fish
 | `default_color` | `#3565ae` | 默认文字颜色 |
 | `default_background` | `transparent` | 默认画布背景 |
 | `default_layout` | `caption` | 默认排版方式 |
+| `llm_enabled` | `true` | 自动创作总开关，控制概率配图与 Skill 模型工具 |
+| `llm_group_whitelist` | `[]` | 允许自动创作的群号列表；空列表允许所有群 |
+| `llm_private_whitelist` | `[]` | 允许自动创作的私聊账号列表；空列表关闭私聊自动创作 |
+| `reply_meme_probability` | `10.0` | 完整正常回复的配图概率，单位为 %；`0` 关闭，`100` 表示每次符合条件都配图 |
+| `reply_meme_cooldown_seconds` | `0` | 概率配图的冷却秒数；`0` 表示不冷却 |
+| `llm_cooldown_seconds` | `300` | Skill 工具配图的冷却秒数；`0` 表示不冷却 |
+
+### 回复后概率配图
+
+模型能正常生成文字回复即可使用这一模式。保持 `llm_enabled` 开启，按需设置群聊和私聊白名单；概率配图使用当前聊天模型，无需加载 Skill、启用工具调用或配置 `local` 电脑能力。
+
+只使用插件概率配图时，在 AstrBot WebUI 中关闭 `blue-fish-meme` Skill，以及 `search_blue_fish_stickers`、`send_blue_fish_meme` 两个模型工具，保持插件的 `llm_enabled` 开启。
+
+每个完整的正常回复只抽签一次，概率作用于符合白名单、冷却等条件的回复。命中后，机器人先发出回复正文，再补发表情：插件额外请求当前聊天模型，从候选素材中选择底图并原创短文案，然后渲染发送。工具调用的中间轮和同一回复的分段只计作这一轮；当前轮已通过肥鱼工具发图时，跳过概率配图。
+
+首次文案不符合规则时，最多追加一次模型请求改写；失败只记录日志。
+
+### Skill 按需创作
+
+插件内置 [blue-fish-meme Skill](skills/blue-fish-meme/SKILL.md)，让模型在接梗、吐槽或庆祝时选择底图、原创文案；群友直接请求表情包，或白名单账号在私聊中请求表情与联调时也能使用。模型通过两个工具完成制图：
+
+| 工具 | 用途 |
+| --- | --- |
+| `search_blue_fish_stickers(query="")` | 按关键词返回最多 8 项素材的 `id`、`name` 和 `tags`，供模型选择 |
+| `send_blue_fish_meme(sticker_id, text, font="", color="", background="", layout="")` | 根据底图 ID 和文案生成 PNG 并发送到当前群或白名单私聊，返回 JSON 状态；省略样式时使用插件默认值 |
+
+在 AstrBot WebUI 中完成以下设置：
+
+1. 选择支持工具调用的聊天模型，在当前会话使用的人格中启用上述两个工具和 `blue-fish-meme` 技能。
+2. 保持插件的 `llm_enabled` 开启。需要限定群聊时，在 `llm_group_whitelist` 中填写群号，例如 `["123456789"]`；需要私聊联调时，在 `llm_private_whitelist` 中填写允许的账号。
+3. 在“AI → 能力 → 使用电脑能力”中将执行环境设为 `local`，为该人格启用 `astrbot_file_read_tool`，并在系统提示词中加入：`读取 Skill 时使用 astrbot_file_read_tool，按技能列表给出的路径读取 SKILL.md。` Shell 继续使用原有的管理员权限设置。
+
+Skill 根据话题决定是否适合发表情；参数不符合要求时可在渲染前改写一次，第二次仍无效就结束。
+
+### 自动创作规则
+
+两种模式都发送到当前群或白名单私聊，文案为一到两行纯文字，每行最多 16 个显示列（约 8 个汉字），不含 emoji。每轮最多渲染并尝试发送一张，同一聊天的两种模式互斥。
+
+冷却按平台和群号或私聊账号分别计时。两种模式共享当前聊天最近一次发送尝试的时间，分别按各自配置的冷却时长判断，发送失败也进入冷却。`/肥鱼` 等命令保持原有用法和发送频率。
+
+要让机器人在没有被 @ 时也参与聊天，在 AstrBot 的群聊主动回复设置中启用主动回复、添加群白名单，并设置合适的触发概率。AstrBot 4.28.2 还要求群聊有共享会话：关闭群成员会话隔离（`unique_session`），在群里发送 `/new` 建立会话；开启群聊上下文（`group_icl_enable`）可让模型结合近期聊天接梗。群聊主动回复决定何时进入聊天模型，肥鱼配图概率决定正常回复后是否补图。
 
 ### 使用自建服务
 
@@ -151,7 +192,7 @@ docker compose --env-file .env.api up -d --build
 
 如果图片已经生成，但 QQ 的图片上传失败，插件会回复“图片已生成，但 QQ 上传失败”。管理员可检查 NapCat 日志中的 `rich media transfer failed`；这一步发生在 QQ 媒体发送阶段。Docker Desktop 部署下的代理故障与处理方法见 [QQ 图片上传排障](docs/troubleshooting.md)。
 
-## 本地联调
+## 聊天命令联调
 
 已在 AstrBot 4.28.2 的真实 WebChat 中通过 25 个场景，覆盖缩略图搜索与分页、按编号制图、跨聊天隔离、数字文案、字体与样式参数、英文别名和错误输入。成品为 1024 × 1024 PNG；搜索和翻页后的编号均对应实际选中的底图。
 
